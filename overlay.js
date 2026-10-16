@@ -141,14 +141,17 @@ window.addEventListener('message',ev=>{
 const style=String.raw`
 #pswm{position:fixed;top:68px;left:14px;width:390px;max-width:calc(100vw - 28px);z-index:2147483646;color:#d9e9e4;font:12px/1.45 system-ui,Arial,sans-serif;user-select:none;filter:drop-shadow(0 10px 20px #0008)}
 #pswm *,#pswm *::before,#pswm *::after{box-sizing:border-box}
-#pswm .panel{background:#0b1d2326;border:1px solid #47796b;border-radius:13px;overflow:hidden;box-shadow:0 10px 30px #0008}
-#pswm .head{display:flex;align-items:center;gap:8px;background:#193b38a6;border-bottom:1px solid #426f67;padding:9px 12px;cursor:move}
-#pswm .head strong{font-size:13px;flex:1;white-space:nowrap}
+#pswm .panel{position:relative;display:flex;flex-direction:column;max-height:calc(100vh - 16px);background:#0b1d2326;border:1px solid #47796b;border-radius:13px;overflow:hidden;box-shadow:0 10px 30px #0008}
+#pswm .head{flex-shrink:0;touch-action:none;display:flex;align-items:center;gap:8px;background:#193b38a6;border-bottom:1px solid #426f67;padding:9px 12px;cursor:move}
+#pswm .head strong{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #pswm button{background:#254b4c;border:1px solid #557d75;color:#e3f6ee;border-radius:7px;padding:5px 9px;cursor:pointer;font:inherit}
 #pswm button:hover{background:#377269}
 #pswm button.off{background:#1c2c33;border-color:#395159;color:#9cafa9}
 #pswm .head button{font-size:16px;font-weight:bold;padding:3px 9px}
-#pswm .body{padding:11px}
+#pswm .body{padding:11px 11px 20px;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#pswm .resize-handle{position:absolute;right:3px;bottom:3px;width:18px;height:18px;padding:0;border:0;border-radius:3px;background:linear-gradient(135deg,transparent 45%,#9ad8bd 46%,#9ad8bd 53%,transparent 54%,transparent 65%,#9ad8bd 66%,#9ad8bd 73%,transparent 74%);cursor:nwse-resize;touch-action:none}
+#pswm .resize-handle:hover{background-color:#254b4c}
+#pswm .resize-handle:focus-visible{outline:2px solid #ffdf73}
 #pswm .details-toggle{display:block;width:100%;margin-top:8px}
 #pswm canvas{display:block;width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;background:#0c151b14;cursor:crosshair;border:1px solid #426c68;border-radius:7px;touch-action:none}
 #pswm .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
@@ -187,9 +190,60 @@ function make(){
     details.hidden=!details.hidden;
     detailsToggle.textContent=details.hidden?'显示详细信息':'隐藏详细信息';
     detailsToggle.setAttribute('aria-expanded',String(!details.hidden));
-    render();
+    fitPanel();render();
   };
   body.append(detailsToggle,details);
+
+  const SIZE_KEY='ps.widemap.panelWidth.v1';
+  let preferredWidth=null;
+  try{const saved=Number(localStorage.getItem(SIZE_KEY));if(Number.isFinite(saved)&&saved>=120&&saved<=640)preferredWidth=saved;}catch(_){}
+  const defaultWidth=()=>Math.min(390,innerWidth*.3,innerHeight*.45);
+  function sizeLimits(){
+    const max=Math.max(80,Math.min(640,innerWidth-28,innerHeight-120));
+    return {min:Math.min(200,max),max};
+  }
+  function fitPanel(){
+    const {min,max}=sizeLimits();
+    root.style.width=Math.max(min,Math.min(max,preferredWidth??defaultWidth()))+'px';
+    const shown=panel.hidden?fab:panel;
+    root.style.left=Math.max(8,Math.min(Math.max(8,innerWidth-shown.offsetWidth-8),root.offsetLeft))+'px';
+    root.style.top=Math.max(8,Math.min(Math.max(8,innerHeight-shown.offsetHeight-8),root.offsetTop))+'px';
+  }
+  function saveWidth(){try{if(preferredWidth===null)localStorage.removeItem(SIZE_KEY);else localStorage.setItem(SIZE_KEY,String(preferredWidth));}catch(_) {}}
+  const resizeHandle=document.createElement('button');
+  resizeHandle.type='button';resizeHandle.className='resize-handle';
+  resizeHandle.title='拖动调整大小，双击恢复默认';
+  resizeHandle.setAttribute('aria-label',resizeHandle.title);
+  panel.appendChild(resizeHandle);
+  let resizing=null;
+  resizeHandle.addEventListener('pointerdown',e=>{
+    if(!e.isPrimary||e.button!==0)return;
+    resizing={id:e.pointerId,x:e.clientX,y:e.clientY,width:root.offsetWidth};
+    resizeHandle.setPointerCapture(e.pointerId);e.preventDefault();e.stopPropagation();
+  });
+  resizeHandle.addEventListener('pointermove',e=>{
+    if(!resizing||e.pointerId!==resizing.id)return;
+    const dx=e.clientX-resizing.x,dy=e.clientY-resizing.y;
+    const {min,max}=sizeLimits();
+    preferredWidth=Math.max(min,Math.min(max,resizing.width+(Math.abs(dx)>=Math.abs(dy)?dx:dy)));
+    fitPanel();e.stopPropagation();
+  });
+  function finishResize(e){
+    if(!resizing||e.pointerId!==resizing.id)return;
+    resizing=null;saveWidth();
+    if(resizeHandle.hasPointerCapture(e.pointerId))resizeHandle.releasePointerCapture(e.pointerId);
+    e.stopPropagation();
+  }
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])resizeHandle.addEventListener(event,finishResize);
+  resizeHandle.addEventListener('dblclick',()=>{preferredWidth=null;saveWidth();fitPanel();});
+  resizeHandle.addEventListener('keydown',e=>{
+    if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home'].includes(e.key))return;
+    e.preventDefault();e.stopPropagation();
+    const {min,max}=sizeLimits();
+    preferredWidth=e.key==='Home'?null:Math.max(min,Math.min(max,root.offsetWidth+(['ArrowLeft','ArrowUp'].includes(e.key)?-20:20)));
+    saveWidth();fitPanel();
+  });
+  window.addEventListener('resize',fitPanel);
   let dragFab=null, suppressFabClick=false;
   fab.title='点击展开地图，拖动调整位置';
   fab.addEventListener('pointerdown',e=>{
@@ -270,7 +324,7 @@ function make(){
     collapsed=false;
     sync();
   },true);
-  function sync(){panel.hidden=!visible || collapsed;fab.hidden=visible && !collapsed;fab.textContent=visible?'🗺 地图（展开）':'🗺 地图（M 开启）';if(visible&&!collapsed)render();}
+  function sync(){panel.hidden=!visible || collapsed;fab.hidden=visible && !collapsed;fab.textContent=visible?'🗺 地图（展开）':'🗺 地图（M 开启）';fitPanel();if(visible&&!collapsed)render();}
   sync();
 }
 let hotspots=[];
