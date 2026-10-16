@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PokéSurvivor · 广域资源地图与一键汉化",
-  "version": "1.7.2",
+  "version": "1.7.5",
   "description": "广域资源地图与专用简体中文汉化，支持宝可梦名称、招式、道具、菜单和战斗提示，一键切换原文。",
   "content_scripts": [
     {

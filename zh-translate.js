@@ -103,7 +103,10 @@
   }
   function updateButton() {
     if (!button) return;
-    button.textContent = enabled ? '中文已开 · 恢复原文' : '一键汉化';
+    const label = enabled ? '中文已开 · 恢复原文' : '一键汉化';
+    button.querySelector('.ps-zh-badge').textContent = enabled ? '中' : '英';
+    button.querySelector('.ps-zh-label').textContent = label;
+    button.setAttribute('aria-label', label);
     button.setAttribute('aria-pressed', String(enabled));
     button.title = enabled ? '关闭汉化，恢复游戏原文' : '开启宝可梦专用简体中文汉化';
   }
@@ -139,10 +142,14 @@
   function start() {
     if (button || !document.body) return;
     const style = document.createElement('style');
-    style.textContent = '#ps-zh-toggle{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483647;max-width:calc(100vw - 24px);padding:8px 12px;border:1px solid #77bba5;border-radius:18px;background:#12342fed;color:#effff8;font:13px/1.4 system-ui,"Microsoft YaHei",sans-serif;box-shadow:0 3px 12px #0006;cursor:pointer;touch-action:manipulation}#ps-zh-toggle[aria-pressed="true"]{background:#245b46}#ps-zh-toggle:focus-visible{outline:2px solid #ffe098;outline-offset:3px}';
+    style.textContent = "#ps-zh-toggle{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483647;display:flex;align-items:center;height:36px;max-width:calc(100vw - 24px);padding:0;overflow:hidden;border:1px solid #77bba5;border-radius:999px;background:#12342fed;color:#effff8;font:13px/1.4 system-ui,\"Microsoft YaHei\",sans-serif;box-shadow:0 3px 12px #0006;cursor:pointer;touch-action:manipulation}#ps-zh-toggle .ps-zh-badge{display:grid;place-items:center;flex:0 0 34px;height:34px;font-size:14px;font-weight:700}#ps-zh-toggle .ps-zh-label{display:block;max-width:0;margin-right:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,margin-right .18s ease,opacity .18s ease}#ps-zh-toggle:hover .ps-zh-label,#ps-zh-toggle:focus-visible .ps-zh-label{max-width:220px;margin-right:12px;opacity:1}#ps-zh-toggle[aria-pressed=\"true\"]{background:#245b46}#ps-zh-toggle:focus-visible{outline:2px solid #ffe098;outline-offset:3px}@media(prefers-reduced-motion:reduce){#ps-zh-toggle .ps-zh-label{transition:none}}";
     document.head.appendChild(style);
     button = document.createElement('button'); button.id = 'ps-zh-toggle'; button.type = 'button';
     button.setAttribute('translate', 'no');
+    for (const className of ['ps-zh-badge', 'ps-zh-label']) {
+      const span = document.createElement('span'); span.className = className;
+      span.setAttribute('aria-hidden', 'true'); button.appendChild(span);
+    }
     button.addEventListener('click', () => setEnabled(!enabled));
     for (const event of ['pointerdown', 'pointerup', 'keydown', 'keyup']) button.addEventListener(event, e => e.stopPropagation());
     document.body.appendChild(button);

@@ -141,8 +141,8 @@ window.addEventListener('message',ev=>{
 const style=String.raw`
 #pswm{position:fixed;top:68px;left:14px;width:390px;max-width:calc(100vw - 28px);z-index:2147483646;color:#d9e9e4;font:12px/1.45 system-ui,Arial,sans-serif;user-select:none;filter:drop-shadow(0 10px 20px #0008)}
 #pswm *,#pswm *::before,#pswm *::after{box-sizing:border-box}
-#pswm .panel{background:#0b1d23f7;border:1px solid #47796b;border-radius:13px;overflow:hidden;box-shadow:0 10px 30px #0008}
-#pswm .head{display:flex;align-items:center;gap:8px;background:#193b38;border-bottom:1px solid #426f67;padding:9px 12px;cursor:move}
+#pswm .panel{background:#0b1d2326;border:1px solid #47796b;border-radius:13px;overflow:hidden;box-shadow:0 10px 30px #0008}
+#pswm .head{display:flex;align-items:center;gap:8px;background:#193b38a6;border-bottom:1px solid #426f67;padding:9px 12px;cursor:move}
 #pswm .head strong{font-size:13px;flex:1;white-space:nowrap}
 #pswm button{background:#254b4c;border:1px solid #557d75;color:#e3f6ee;border-radius:7px;padding:5px 9px;cursor:pointer;font:inherit}
 #pswm button:hover{background:#377269}
@@ -150,7 +150,7 @@ const style=String.raw`
 #pswm .head button{font-size:16px;font-weight:bold;padding:3px 9px}
 #pswm .body{padding:11px}
 #pswm .details-toggle{display:block;width:100%;margin-top:8px}
-#pswm canvas{display:block;width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;background:#0c151b;cursor:crosshair;border:1px solid #426c68;border-radius:7px;touch-action:none}
+#pswm canvas{display:block;width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;background:#0c151b14;cursor:crosshair;border:1px solid #426c68;border-radius:7px;touch-action:none}
 #pswm .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
 #pswm .label{color:#a0d3c3;font-weight:700;margin-top:9px}
 #pswm .subtitle{color:#b5cac6;font-size:11px;margin-top:4px}
@@ -262,7 +262,14 @@ function make(){
     dragMap=null;
   });
   canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(1.6,Math.min(8,zoom*(e.deltaY<0?1.15:1/1.15)));render();},{passive:false});
-  window.addEventListener('keydown',e=>{if(e.code==='KeyM' && !e.repeat && !/input|textarea/i.test(document.activeElement?.tagName||'')) {visible=!visible;sync();}},true);
+  window.addEventListener('keydown',e=>{
+    const focused=document.activeElement;
+    if(e.code!=='KeyM' || e.repeat || e.isComposing || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey ||
+       /^(INPUT|TEXTAREA|SELECT)$/.test(focused?.tagName||'') || focused?.isContentEditable)return;
+    visible=!(visible && !collapsed);
+    collapsed=false;
+    sync();
+  },true);
   function sync(){panel.hidden=!visible || collapsed;fab.hidden=visible && !collapsed;fab.textContent=visible?'🗺 地图（展开）':'🗺 地图（M 开启）';if(visible&&!collapsed)render();}
   sync();
 }
@@ -277,7 +284,7 @@ function chooseNearest(sx,sy){
 function render(){
  if(!canvas || !context || !visible || collapsed)return;
  const ctx=context,w=canvas.width,h=canvas.height;
- ctx.fillStyle='#102129';ctx.fillRect(0,0,w,h);
+ ctx.clearRect(0,0,w,h);
  if(!camera || Date.now()-lastCameraAt>5000){
    status.textContent='等待游戏的地图绘制数据，请进入实际对局后移动几步';
    source.textContent=`状态：${seenChunks} 个已生成区块 · 尚未定位玩家`;
@@ -295,6 +302,9 @@ function render(){
    ctx.fillStyle=t===0?'#4b8156':t===1?'#87929b':t===2?'#367ba5':'#13262d';
    ctx.fillRect(Math.floor(px),Math.floor(py),Math.ceil(zoom+1),Math.ceil(zoom+1));
  }
+ // Fade terrain as one layer so overlapping tile edges stay evenly translucent.
+ ctx.save();ctx.globalCompositeOperation='destination-in';
+ ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,w,h);ctx.restore();
  // Known objects take precedence; no ghost markers on broken or used props.
  const known=new Map();
  const chestCounts={chest:{confirmed:0,predicted:0},bigchest:{confirmed:0,predicted:0}};
