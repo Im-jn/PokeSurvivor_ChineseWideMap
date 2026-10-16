@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "PokéSurvivor · 广域资源地图与一键汉化",
+  "version": "1.7.2",
+  "description": "广域资源地图与专用简体中文汉化，支持宝可梦名称、招式、道具、菜单和战斗提示，一键切换原文。",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://pokesurvivor.com/*",
+        "https://www.pokesurvivor.com/*"
+      ],
+      "js": [
+        "capture.js",
+        "zh-dictionary.js",
+        "zh-translate.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://pokesurvivor.com/*",
+        "https://www.pokesurvivor.com/*"
+      ],
+      "js": [
+        "overlay.js"
+      ],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
