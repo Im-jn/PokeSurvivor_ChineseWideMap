@@ -40,3 +40,26 @@ test('all translated templates retain their placeholder count', () => {
 test('every Pokemon name alias resolves to its Chinese name', () => {
   for (const [source,target] of Object.entries(context.__PS_ZH_DATA__.names)) assert.equal(t(source),target,source);
 });
+
+
+test('2026-10-19 controller, collection, stats, aiming and cloud updates', () => {
+  assert.equal(t('Nasty Plot'), '诡计');
+  assert.equal(t('Sp. Atk · Sp. Def · Physical · Special'), '特攻 · 特防 · 物理 · 特殊');
+  assert.equal(t('Controller connected'), '手柄已连接');
+  assert.equal(t('Buscar por nombre o número'), '按名称或编号搜索');
+  assert.equal(t('Mark as favorite'), '添加到收藏');
+  assert.equal(t('Manual aim'), '手动瞄准');
+  assert.equal(t('Saving to the cloud in 5 s.'), '5 秒后保存至云端。');
+  assert.equal(t('With Flamethrower it deals 120 %: it hits harder with special moves.'), '使用 喷射火焰 时造成 120% 伤害：更擅长使用特殊招式。');
+  assert.equal(t('7 physical'), '7 物理');
+  assert.equal(t('7 especial'), '7 特殊');
+  assert.equal(t('12 Pokémon'), '12 只宝可梦');
+});
+
+test('all tracked upstream phrases have both Spanish and English translations', () => {
+  const upstream = JSON.parse(fs.readFileSync(path.join(root, 'tools/translation/en-entries.json'), 'utf8'));
+  for (const [spanish, english] of Object.entries(upstream)) {
+    assert.ok(context.__PS_ZH_DATA__.phrases[spanish], spanish);
+    assert.ok(context.__PS_ZH_DATA__.phrases[english], english);
+  }
+});
